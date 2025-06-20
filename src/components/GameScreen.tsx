@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, Clock, Star, Zap } from 'lucide-react';
-import { GameState, Question } from '../types/game';
-import { generateQuestion } from '../utils/questionGenerator';
+import React, { useState, useEffect } from "react";
+import { Heart, Clock, Star, Zap } from "lucide-react";
+import { GameState, Question } from "../types/game";
+import { generateQuestion } from "../utils/questionGenerator";
+import Hearts from "./Hearts";
 
 interface GameScreenProps {
   gameState: GameState;
@@ -9,17 +10,73 @@ interface GameScreenProps {
   onTimeUp: () => void;
 }
 
-export default function GameScreen({ gameState, onAnswerSelect, onTimeUp }: GameScreenProps) {
+export default function GameScreen({
+  gameState,
+  onAnswerSelect,
+  onTimeUp,
+}: GameScreenProps) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [questionTime, setQuestionTime] = useState(10);
 
+  // Timer for Time Attack mode
   useEffect(() => {
-    if (gameState.mode === 'time') {
+    if (gameState.mode === "time") {
+      const timer = setInterval(() => {
+        const elapsed = (Date.now() - gameState.startTime) / 1000;
+        const remaining = Math.max(0, gameState.timeLimit - elapsed);
+        setTimeLeft(Math.ceil(remaining));
+
+        if (remaining <= 0) {
+          clearInterval(timer);
+          onTimeUp();
+        }
+      }, 100);
+
+      return () => clearInterval(timer);
+    }
+  }, [gameState.mode, gameState.startTime, gameState.timeLimit, onTimeUp]);
+
+  // Timer for Classic mode (per question)
+  useEffect(() => {
+    if (gameState.mode === "classic" && gameState.currentQuestion) {
+      const baseTime = 15;
+      const timeReduction = Math.floor(gameState.difficulty / 2);
+      const adjustedTime = Math.max(
+        5,
+        baseTime - timeReduction + gameState.timeBonus
+      );
+      setQuestionTime(adjustedTime);
+
+      let timeRemaining = adjustedTime;
+      const timer = setInterval(() => {
+        timeRemaining -= 1;
+        setQuestionTime(timeRemaining);
+
+        if (timeRemaining <= 0) {
+          clearInterval(timer);
+          onTimeUp();
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [
+    gameState.currentQuestion,
+    gameState.difficulty,
+    gameState.timeBonus,
+    gameState.mode,
+    onTimeUp,
+  ]);
+
+  useEffect(() => {
+    if (gameState.mode === "time") {
       const timer = setInterval(() => {
         const elapsed = (Date.now() - gameState.startTime) / 1000;
         const remaining = Math.max(0, gameState.timeLimit - elapsed);
         setTimeLeft(Math.floor(remaining));
-        
+
+        console.log("have " + remaining + " second left");
+
         if (remaining <= 0) {
           onTimeUp();
         }
@@ -33,17 +90,26 @@ export default function GameScreen({ gameState, onAnswerSelect, onTimeUp }: Game
     // Question timer (gets faster with difficulty)
     const baseTime = 15;
     const timeReduction = Math.floor(gameState.difficulty / 2);
-    const adjustedTime = Math.max(5, baseTime - timeReduction + gameState.timeBonus);
+    const adjustedTime = Math.max(
+      5,
+      baseTime - timeReduction + gameState.timeBonus
+    );
     setQuestionTime(adjustedTime);
 
-    if (gameState.mode === 'classic') {
+    if (gameState.mode === "classic") {
       const timer = setTimeout(() => {
         onTimeUp();
       }, adjustedTime * 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [gameState.currentQuestion, gameState.difficulty, gameState.timeBonus, gameState.mode, onTimeUp]);
+  }, [
+    gameState.currentQuestion,
+    gameState.difficulty,
+    gameState.timeBonus,
+    gameState.mode,
+    onTimeUp,
+  ]);
 
   const getExpForNextLevel = () => gameState.level * 100;
   const expProgress = (gameState.exp / getExpForNextLevel()) * 100;
@@ -52,66 +118,65 @@ export default function GameScreen({ gameState, onAnswerSelect, onTimeUp }: Game
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl mx-auto">
         {/* Header Stats */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/20">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Lives */}
-            <div className="flex items-center space-x-2">
-              <Heart className="w-5 h-5 text-red-400" />
-              <div>
-                <div className="text-white font-bold">
-                  {Array.from({ length: gameState.maxLives }, (_, i) => (
-                    <span key={i} className={i < gameState.lives ? 'text-red-400' : 'text-gray-500'}>
-                      ❤️
-                    </span>
-                  ))}
-                </div>
-                <div className="text-xs text-blue-200">Lives</div>
-              </div>
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/20 shadow-xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* Dynamic Lives Display */}
+            <div className="flex items-center justify-center md:justify-start">
+              <Hearts
+                currentLives={gameState.lives}
+                maxLives={gameState.maxLives}
+              />
             </div>
 
             {/* Timer */}
-            <div className="flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-blue-400" />
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <Clock className="w-6 h-6 text-blue-400" />
+                {(gameState.mode === "time" ? timeLeft : questionTime) <= 5 && (
+                  <div className="absolute -inset-1 bg-red-400 rounded-full opacity-30 animate-ping" />
+                )}
+              </div>
               <div>
-                <div className="text-white font-bold text-xl">
-                  {gameState.mode === 'time' ? timeLeft : questionTime}s
+                <div
+                  className={`font-bold text-xl transition-colors duration-300 ${
+                    (gameState.mode === "time" ? timeLeft : questionTime) <= 5
+                      ? "text-red-400 animate-pulse"
+                      : "text-white"
+                  }`}
+                >
+                  {gameState.mode === "time" ? timeLeft : questionTime}s
                 </div>
                 <div className="text-xs text-blue-200">
-                  {gameState.mode === 'time' ? 'Total' : 'Question'}
+                  {gameState.mode === "time" ? "Remaining" : "Per Question"}
                 </div>
               </div>
             </div>
 
             {/* Level */}
-            <div className="flex items-center space-x-2">
-              <Star className="w-5 h-5 text-yellow-400" />
+            <div className="flex items-center space-x-3">
+              <Star className="w-6 h-6 text-yellow-400" />
               <div>
-                <div className="text-white font-bold text-xl">{gameState.level}</div>
+                <div className="text-white font-bold text-xl">
+                  {gameState.level}
+                </div>
                 <div className="text-xs text-blue-200">Level</div>
               </div>
             </div>
 
-            {/* Score */}
-            <div className="flex items-center space-x-2">
-              <Zap className="w-5 h-5 text-purple-400" />
-              <div>
-                <div className="text-white font-bold text-xl">{gameState.score}</div>
-                <div className="text-xs text-blue-200">Score</div>
+            {/* EXP Progress */}
+            <div className="mt-4">
+              <div className="flex justify-between text-sm text-blue-200 mb-1">
+                <span>EXP</span>
+                <span>
+                  {gameState.exp} / {getExpForNextLevel()}
+                </span>
               </div>
-            </div>
-          </div>
-
-          {/* EXP Progress */}
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-blue-200 mb-1">
-              <span>EXP</span>
-              <span>{gameState.exp} / {getExpForNextLevel()}</span>
-            </div>
-            <div className="w-full bg-blue-900/50 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${expProgress}%` }}
-              />
+              <div className="w-full bg-blue-900/50 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${expProgress}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -121,7 +186,8 @@ export default function GameScreen({ gameState, onAnswerSelect, onTimeUp }: Game
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-6 border border-white/20 text-center">
             <div className="mb-8">
               <div className="text-sm text-blue-300 mb-2">
-                Question {gameState.questionsAnswered + 1} • Difficulty {gameState.difficulty}
+                Question {gameState.questionsAnswered + 1} • Difficulty{" "}
+                {gameState.difficulty}
               </div>
               <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">
                 {gameState.currentQuestion.text}

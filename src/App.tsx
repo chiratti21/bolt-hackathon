@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import StartScreen from './components/StartScreen';
-import GameScreen from './components/GameScreen';
-import SkillSelection from './components/SkillSelection';
-import GameOver from './components/GameOver';
-import { GameState, Question } from './types/game';
-import { generateQuestion } from './utils/questionGenerator';
-import { getRandomSkills, SKILLS } from './utils/skills';
+import React, { useState, useCallback, useEffect } from "react";
+import StartScreen from "./components/StartScreen";
+import GameScreen from "./components/GameScreen";
+import SkillSelection from "./components/SkillSelection";
+import GameOver from "./components/GameOver";
+import { GameState, Question } from "./types/game";
+import { generateQuestion } from "./utils/questionGenerator";
+import { getRandomSkills, SKILLS } from "./utils/skills";
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -20,15 +20,15 @@ function App() {
     timeBonus: 0,
     damageMultiplier: 10,
     currentQuestion: null,
-    gameStatus: 'menu',
+    gameStatus: "menu",
     difficulty: 1,
-    questionsAnswered: 0
+    questionsAnswered: 0,
   });
 
   const [availableSkills, setAvailableSkills] = useState(getRandomSkills());
-  const [feedbackMessage, setFeedbackMessage] = useState<string>('');
+  const [feedbackMessage, setFeedbackMessage] = useState<string>("");
 
-  const initializeGame = useCallback((mode: 'classic' | 'time') => {
+  const initializeGame = useCallback((mode: "classic" | "time") => {
     const newState: GameState = {
       mode,
       lives: 3,
@@ -41,12 +41,12 @@ function App() {
       timeBonus: 0,
       damageMultiplier: 10,
       currentQuestion: generateQuestion(1),
-      gameStatus: 'playing',
+      gameStatus: "playing",
       difficulty: 1,
-      questionsAnswered: 0
+      questionsAnswered: 0,
     };
     setGameState(newState);
-    setFeedbackMessage('');
+    setFeedbackMessage("");
   }, []);
 
   const checkLevelUp = useCallback((currentState: GameState) => {
@@ -56,75 +56,84 @@ function App() {
         ...currentState,
         level: currentState.level + 1,
         exp: currentState.exp - expForNextLevel,
-        gameStatus: 'levelUp' as const
+        gameStatus: "levelUp" as const,
       };
     }
     return currentState;
   }, []);
 
-  const handleAnswerSelect = useCallback((selectedAnswer: number) => {
-    if (!gameState.currentQuestion || gameState.gameStatus !== 'playing') return;
-
-    const isCorrect = selectedAnswer === gameState.currentQuestion.answer;
-    let newState = { ...gameState };
-
-    if (isCorrect) {
-      // Correct answer
-      newState.score += 1;
-      newState.exp += newState.damageMultiplier;
-      newState.questionsAnswered += 1;
-      
-      // Increase difficulty every 5 questions
-      if (newState.questionsAnswered % 5 === 0) {
-        newState.difficulty += 1;
-      }
-      
-      setFeedbackMessage('Correct! ✨');
-    } else {
-      // Wrong answer
-      newState.lives -= 1;
-      setFeedbackMessage('Wrong! Try harder! 💪');
-      
-      if (newState.lives <= 0) {
-        newState.gameStatus = 'gameOver';
-        setGameState(newState);
+  const handleAnswerSelect = useCallback(
+    (selectedAnswer: number) => {
+      if (!gameState.currentQuestion || gameState.gameStatus !== "playing")
         return;
+
+      const isCorrect = selectedAnswer === gameState.currentQuestion.answer;
+      let newState = { ...gameState };
+
+      if (isCorrect) {
+        // Correct answer
+        newState.score += 1;
+        newState.exp += newState.damageMultiplier;
+        newState.questionsAnswered += 1;
+
+        // Increase difficulty every 5 questions
+        if (newState.questionsAnswered % 5 === 0) {
+          newState.difficulty += 1;
+        }
+
+        setFeedbackMessage("Correct! ✨");
+      } else {
+        // Wrong answer
+        newState.lives -= 1;
+        setFeedbackMessage("Wrong! Try harder! 💪");
+        console.log("have " + gameState.lives + " lives left");
+
+        if (newState.lives <= 0) {
+          newState.gameStatus = "gameOver";
+          setGameState(newState);
+          return;
+        }
       }
-    }
 
-    // Check for level up
-    newState = checkLevelUp(newState);
-    
-    if (newState.gameStatus === 'levelUp') {
-      setAvailableSkills(getRandomSkills());
-    } else {
-      // Generate next question
+      // Check for level up
+      newState = checkLevelUp(newState);
+
+      if (newState.gameStatus === "levelUp") {
+        setAvailableSkills(getRandomSkills());
+      } else {
+        // Generate next question
+        newState.currentQuestion = generateQuestion(newState.difficulty);
+      }
+
+      setGameState(newState);
+
+      // Clear feedback after 1 second
+      setTimeout(() => setFeedbackMessage(""), 1000);
+    },
+    [gameState, checkLevelUp]
+  );
+
+  const handleSkillSelect = useCallback(
+    (skill: any) => {
+      const newState = skill.effect(gameState);
+      newState.gameStatus = "playing";
       newState.currentQuestion = generateQuestion(newState.difficulty);
-    }
-
-    setGameState(newState);
-
-    // Clear feedback after 1 second
-    setTimeout(() => setFeedbackMessage(''), 1000);
-  }, [gameState, checkLevelUp]);
-
-  const handleSkillSelect = useCallback((skill: any) => {
-    const newState = skill.effect(gameState);
-    newState.gameStatus = 'playing';
-    newState.currentQuestion = generateQuestion(newState.difficulty);
-    setGameState(newState);
-  }, [gameState]);
+      setGameState(newState);
+    },
+    [gameState]
+  );
 
   const handleTimeUp = useCallback(() => {
-    if (gameState.mode === 'time') {
-      setGameState(prev => ({ ...prev, gameStatus: 'gameOver' }));
+    if (gameState.mode === "time") {
+      setGameState((prev) => ({ ...prev, gameStatus: "gameOver" }));
     } else {
       // Classic mode - time up on question
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         lives: prev.lives - 1,
-        gameStatus: prev.lives <= 1 ? 'gameOver' : 'playing',
-        currentQuestion: prev.lives > 1 ? generateQuestion(prev.difficulty) : null
+        gameStatus: prev.lives <= 1 ? "gameOver" : "playing",
+        currentQuestion:
+          prev.lives > 1 ? generateQuestion(prev.difficulty) : null,
       }));
     }
   }, [gameState.mode]);
@@ -136,48 +145,50 @@ function App() {
   }, [gameState.mode, initializeGame]);
 
   const handleBackToMenu = useCallback(() => {
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       mode: null,
-      gameStatus: 'menu'
+      gameStatus: "menu",
     }));
   }, []);
 
   // Render feedback message
   useEffect(() => {
     if (feedbackMessage) {
-      const timer = setTimeout(() => setFeedbackMessage(''), 1500);
+      const timer = setTimeout(() => setFeedbackMessage(""), 1500);
       return () => clearTimeout(timer);
     }
   }, [feedbackMessage]);
 
   return (
     <>
-      {gameState.gameStatus === 'menu' && (
+      {gameState.gameStatus === "menu" && (
         <StartScreen onSelectMode={initializeGame} />
       )}
-      
-      {gameState.gameStatus === 'playing' && (
+
+      {gameState.gameStatus === "playing" && (
         <GameScreen
           gameState={gameState}
           onAnswerSelect={handleAnswerSelect}
           onTimeUp={handleTimeUp}
         />
       )}
-      
-      {gameState.gameStatus === 'levelUp' && (
+
+      {gameState.gameStatus === "levelUp" && (
         <SkillSelection
           skills={availableSkills}
           onSelectSkill={handleSkillSelect}
-          onClose={() => setGameState(prev => ({
-            ...prev,
-            gameStatus: 'playing',
-            currentQuestion: generateQuestion(prev.difficulty)
-          }))}
+          onClose={() =>
+            setGameState((prev) => ({
+              ...prev,
+              gameStatus: "playing",
+              currentQuestion: generateQuestion(prev.difficulty),
+            }))
+          }
         />
       )}
-      
-      {gameState.gameStatus === 'gameOver' && (
+
+      {gameState.gameStatus === "gameOver" && (
         <GameOver
           gameState={gameState}
           onRestart={handleRestart}
