@@ -7,8 +7,8 @@ interface StartScreenProps {
 
 export default function StartScreen({ onSelectMode }: StartScreenProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-      <div className="text-center max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex justify-center p-4 w-full">
+      <div className="text-center mx-auto">
         {/* Game Title */}
         <div className="mb-8">
           <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">

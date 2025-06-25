@@ -1,7 +1,8 @@
+// Login.tsx (ตรวจสอบให้แน่ใจว่าเป็นโค้ดนี้)
 import React, { useState } from 'react';
 
 interface LoginProps {
-  onLoginSuccess: () => void;
+  onLoginSuccess: (username: string) => void; // ควรรับ username มาด้วย
   onNavigateToRegister: () => void;
 }
 
@@ -10,14 +11,12 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }: LoginPro
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-// ... (imports and other code)
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      const response = await fetch('/api/login', { // Use /api/login if proxy is set, otherwise 'http://localhost:5000/api/login'
+      const response = await fetch('/api/login', { // ยังคง fetch ไปที่ backend ของเรา
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,8 +26,8 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }: LoginPro
 
       const data = await response.json();
 
-      if (response.ok) { // Status code 200-299
-        onLoginSuccess(data.username); // Assuming backend sends back username on success
+      if (response.ok) {
+        onLoginSuccess(data.username); // เรียก onLoginSuccess ซึ่งจะไปอัปเดตสถานะใน AuthContext
       } else {
         setError(data.msg || 'Login failed.');
       }
@@ -37,8 +36,6 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }: LoginPro
       setError('An error occurred during login. Please try again.');
     }
   };
-
-// ... (rest of the component)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-zinc-800 to-stone-900 flex items-center justify-center p-4">

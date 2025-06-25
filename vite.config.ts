@@ -7,9 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000/api/register', // Your backend server address
+        target: 'http://localhost:5000', // แก้ไขให้เป็น Base URL ของ Backend
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''), // Remove /api prefix when forwarding
+        // ลบกฎ rewrite ออก เพราะ Backend ของคุณต้องการ /api อยู่แล้ว
       },
     },
   },

@@ -115,8 +115,8 @@ export default function GameScreen({
   const expProgress = (gameState.exp / getExpForNextLevel()) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center w-full">
+      <div className="mx-auto">
         {/* Header Stats */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/20 shadow-xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

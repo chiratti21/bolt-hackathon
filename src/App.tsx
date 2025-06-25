@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Play, Clock, Heart, Zap, BookOpen, Trophy, RotateCcw, Home, Star } from 'lucide-react';
 
 // แก้ไขพาธการ Import สำหรับคอมโพเนนต์เกมเดิม
-// โดยสมมติว่าไฟล์เหล่านี้อยู่ในไดเรกทอรีเดียวกับ App.tsx (เช่น src/)
 import StartScreen from './components/StartScreen';
 import GameScreen from './components/GameScreen';
 import SkillSelection from './components/SkillSelection';
@@ -13,9 +12,9 @@ import Login from './components/Login';
 import Register from './components/Register';
 
 // พาธสำหรับ AuthContext ที่อยู่ใน src/contexts/
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext'; // Import ยังคงเหมือนเดิม
 
-// Type Definitions (from types/game.ts)
+// Type Definitions (จาก types/game.ts - โค้ดเดิม)
 export interface Question {
   text: string;
   answer: number;
@@ -35,7 +34,7 @@ export interface GameState {
   timeBonus: number;
   damageMultiplier: number;
   currentQuestion: Question | null;
-  gameStatus: 'menu' | 'playing' | 'levelUp' | 'gameOver' | 'login' | 'register'; // Add login/register status
+  gameStatus: 'menu' | 'playing' | 'levelUp' | 'gameOver' | 'login' | 'register';
   difficulty: number;
   questionsAnswered: number;
 }
@@ -48,7 +47,7 @@ export interface Skill {
   effect: (state: GameState) => GameState;
 }
 
-// Utility Functions (from utils/questionGenerator.ts - assuming this file exists)
+// Utility Functions (จาก utils/questionGenerator.ts - โค้ดเดิม)
 export function generateQuestion(difficulty: number): Question {
   const operators = ['+', '-', '*', '/'];
   const op = operators[Math.floor(Math.random() * operators.length)];
@@ -62,7 +61,7 @@ export function generateQuestion(difficulty: number): Question {
 
   let num1, num2, answer;
   let attempts = 0;
-  const maxAttempts = 100; // Prevent infinite loops
+  const maxAttempts = 100;
 
   do {
     const range = getRange(difficulty);
@@ -72,31 +71,28 @@ export function generateQuestion(difficulty: number): Question {
     if (op === '+') answer = num1 + num2;
     else if (op === '-') answer = num1 - num2;
     else if (op === '*') answer = num1 * num2;
-    else { // Division
-      // Ensure division results in an integer
-      num1 = num1 * num2; // Make num1 a multiple of num2
+    else {
+      num1 = num1 * num2;
       answer = num1 / num2;
     }
     attempts++;
-  } while (answer < 0 || answer > 1000 || !Number.isInteger(answer) && attempts < maxAttempts); // Add maxAttempts
+  } while (answer < 0 || answer > 1000 || !Number.isInteger(answer) && attempts < maxAttempts);
 
   if (attempts === maxAttempts) {
-    // Fallback for extremely difficult generation if needed
     console.warn("Could not generate suitable question within max attempts. Using fallback.");
-    return generateQuestion(difficulty - 1 > 0 ? difficulty - 1 : 1); // Retry with lower difficulty
+    return generateQuestion(difficulty - 1 > 0 ? difficulty - 1 : 1);
   }
 
   const choices: number[] = [answer];
-  while (choices.length < 3) { // Ensure 3 choices
+  while (choices.length < 3) {
     let randomChoice: number;
     do {
-      randomChoice = Math.floor(Math.random() * 100) + answer - 50; // Generate choices around the answer
-      randomChoice = Math.max(1, Math.min(1000, randomChoice)); // Keep choices within a reasonable range
+      randomChoice = Math.floor(Math.random() * 100) + answer - 50;
+      randomChoice = Math.max(1, Math.min(1000, randomChoice));
     } while (choices.includes(randomChoice) || randomChoice === answer);
     choices.push(randomChoice);
   }
 
-  // Shuffle choices
   for (let i = choices.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [choices[i], choices[j]] = [choices[j], choices[i]];
@@ -119,20 +115,20 @@ const initialGameState: GameState = {
   exp: 0,
   level: 1,
   startTime: 0,
-  timeLimit: 60, // 60 seconds for Time Attack
-  timeBonus: 0, // No time bonus by default
-  damageMultiplier: 1, // No damage multiplier by default
+  timeLimit: 60,
+  timeBonus: 0,
+  damageMultiplier: 1,
   currentQuestion: null,
-  gameStatus: 'login', // Initial status is login
+  gameStatus: 'login',
   difficulty: 1,
   questionsAnswered: 0,
 };
 
-const EXP_TO_LEVEL_UP = 100; // EXP needed to level up
-const LIVES_PER_LEVEL = 1; // Lives gained per level up
+const EXP_TO_LEVEL_UP = 100;
+const LIVES_PER_LEVEL = 1;
 
-function AppContent() { // Renamed App to AppContent
-  const { isAuthenticated, login, logout } = useAuth();
+function AppContent() {
+  const { isAuthenticated, setLoggedInUser, logout, username } = useAuth(); // เพิ่ม username เข้ามาเพื่อแสดงผล
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
@@ -140,13 +136,13 @@ function AppContent() { // Renamed App to AppContent
     setFeedbackMessage(message);
     const timer = setTimeout(() => {
       setFeedbackMessage(null);
-    }, 3000); // Message disappears after 3 seconds
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 
   const handleStartGame = useCallback((mode: 'classic' | 'time') => {
     setGameState((prev) => ({
-      ...initialGameState, // Reset to initial state
+      ...initialGameState,
       mode: mode,
       startTime: mode === 'time' ? Date.now() : 0,
       gameStatus: 'playing',
@@ -173,24 +169,22 @@ function AppContent() { // Renamed App to AppContent
       if (isCorrect) {
         showFeedback("✅ Correct!");
         newScore += 10 * prev.damageMultiplier;
-        newExp += (10 * prev.damageMultiplier) + (prev.difficulty * 2); // More EXP for higher difficulty
+        newExp += (10 * prev.damageMultiplier) + (prev.difficulty * 2);
 
-        // Calculate time bonus for Time Attack mode
         if (prev.mode === 'time') {
             const timeTaken = (Date.now() - prev.startTime) / 1000;
             const remainingTime = Math.max(0, prev.timeLimit - timeTaken);
-            // Example: 1 bonus point for every 5 seconds remaining, up to a max
             newTimeBonus += Math.min(5, Math.floor(remainingTime / 5));
         }
 
         if (newExp >= EXP_TO_LEVEL_UP * newLevel) {
             newLevel++;
-            newExp = 0; // Reset EXP for the new level
+            newExp = 0;
             newGameStatus = 'levelUp';
-            newLives = Math.min(prev.maxLives + LIVES_PER_LEVEL, 5); // Gain lives on level up, max 5 for example
+            newLives = Math.min(prev.maxLives + LIVES_PER_LEVEL, 5);
             showFeedback(`🎉 Level Up! You are now Level ${newLevel}!`);
         } else {
-            newDifficulty = Math.min(10, prev.difficulty + 0.2); // Gradually increase difficulty
+            newDifficulty = Math.min(10, prev.difficulty + 0.2);
         }
       } else {
         showFeedback("❌ Incorrect!");
@@ -198,7 +192,7 @@ function AppContent() { // Renamed App to AppContent
         if (newLives <= 0) {
           newGameStatus = 'gameOver';
         } else {
-            newDifficulty = Math.max(1, prev.difficulty - 0.5); // Decrease difficulty on incorrect answer
+            newDifficulty = Math.max(1, prev.difficulty - 0.5);
         }
       }
 
@@ -229,9 +223,9 @@ function AppContent() { // Renamed App to AppContent
   const handleRestart = useCallback(() => {
     setGameState({
       ...initialGameState,
-      gameStatus: 'menu', // Go back to menu to select mode
+      gameStatus: 'menu',
       difficulty: 1,
-      lives: initialGameState.maxLives, // Reset lives to max on restart
+      lives: initialGameState.maxLives,
     });
     showFeedback("Game Restarted!");
   }, [showFeedback]);
@@ -298,25 +292,22 @@ function AppContent() { // Renamed App to AppContent
     showFeedback(`Skill Unlocked: ${skill.name}!`);
   }, [showFeedback]);
 
-  // ** ย้าย handleLoginSuccess และ handleRegisterSuccess มาไว้ตรงนี้ **
   const handleLoginSuccess = useCallback((username: string) => {
-    login(username); // Now `login` expects a username
-    setGameState((prev) => ({ ...prev, gameStatus: 'menu' })); // After login, go to game menu
+    setLoggedInUser(username);
+    setGameState((prev) => ({ ...prev, gameStatus: 'menu' }));
     showFeedback("Login successful!");
-  }, [login, showFeedback]);
+  }, [setLoggedInUser, showFeedback]);
 
   const handleRegisterSuccess = useCallback(() => {
-    setGameState((prev) => ({ ...prev, gameStatus: 'login' })); // After registration, go to login screen
+    setGameState((prev) => ({ ...prev, gameStatus: 'login' }));
     showFeedback("Registration successful! Please login.");
   }, [showFeedback]);
-  // ** สิ้นสุดการย้าย **
-
 
   if (!isAuthenticated) {
     if (gameState.gameStatus === 'login') {
       return (
         <Login
-          onLoginSuccess={handleLoginSuccess} // Pass handleLoginSuccess directly
+          onLoginSuccess={handleLoginSuccess}
           onNavigateToRegister={() => setGameState((prev) => ({ ...prev, gameStatus: 'register' }))}
         />
       );
@@ -328,7 +319,6 @@ function AppContent() { // Renamed App to AppContent
         />
       );
     }
-    // Default to login if status is not explicitly set for auth
     return (
       <Login
         onLoginSuccess={handleLoginSuccess}
@@ -337,44 +327,70 @@ function AppContent() { // Renamed App to AppContent
     );
   }
 
-  // Render game screens if authenticated
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-zinc-900 to-stone-900 text-white flex flex-col items-center justify-center">
-      {gameState.gameStatus === 'menu' && (
-        <StartScreen onSelectMode={handleStartGame} />
-      )}
+    // เปลี่ยน div หลักให้ใช้ 'flex-col' และ 'justify-between' เพื่อดันปุ่ม logout ไปอยู่ด้านบน
+      <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-zinc-900 to-stone-900 text-white overflow-hidden">
+      {/* Floating Header - ลอยอย่างสมบูรณ์ ไม่กินพื้นที่ */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="w-full px-4 py-2 flex justify-between items-center">
+          <div className="flex items-center space-x-2 pointer-events-auto">
+            <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse opacity-60"></div>
+            <span className="text-xs text-white/40 font-light">TheMathrix</span>
+          </div>
+          
+          {username && (
+            <div className="flex items-center space-x-3 pointer-events-auto">
+              <span className="text-xs text-white/30 hidden sm:block font-light">
+                {username}
+              </span>
+              <button
+                onClick={logout}
+                className="text-white/30 hover:text-white/60 text-sm font-light transition-colors duration-200 w-6 h-6 flex items-center justify-center"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
-      {gameState.gameStatus === 'playing' && gameState.currentQuestion && (
-        <GameScreen
-          gameState={gameState}
-          onAnswerSelect={handleAnswerSelect}
-          onTimeUp={handleTimeUp}
-        />
-      )}
+      {/* เนื้อหาหลักของเกม - เต็มหน้าจอจริงๆ ไม่มีอะไรมากีดขวาง */}
+      <div className="absolute inset-0 flex flex-col items-center"> {/* เพิ่ม w-full และ flex-grow */}
+        {gameState.gameStatus === 'menu' && (
+          <StartScreen onSelectMode={handleStartGame} />
+        )}
 
-      {gameState.gameStatus === "levelUp" && (
-        <SkillSelection
-          skills={availableSkills}
-          onSelectSkill={handleSkillSelect}
-          onClose={() =>
-            setGameState((prev) => ({
-              ...prev,
-              gameStatus: "playing",
-              currentQuestion: generateQuestion(prev.difficulty),
-            }))
-          }
-        />
-      )}
+        {gameState.gameStatus === 'playing' && gameState.currentQuestion && (
+          <GameScreen
+            gameState={gameState}
+            onAnswerSelect={handleAnswerSelect}
+            onTimeUp={handleTimeUp}
+          />
+        )}
 
-      {gameState.gameStatus === "gameOver" && (
-        <GameOver
-          gameState={gameState}
-          onRestart={handleRestart}
-          onBackToMenu={handleBackToMenu}
-        />
-      )}
+        {gameState.gameStatus === "levelUp" && (
+          <SkillSelection
+            skills={availableSkills}
+            onSelectSkill={handleSkillSelect}
+            onClose={() =>
+              setGameState((prev) => ({
+                ...prev,
+                gameStatus: "playing",
+                currentQuestion: generateQuestion(prev.difficulty),
+              }))
+            }
+          />
+        )}
 
-      {/* Feedback Toast */}
+        {gameState.gameStatus === "gameOver" && (
+          <GameOver
+            gameState={gameState}
+            onRestart={handleRestart}
+            onBackToMenu={handleBackToMenu}
+          />
+        )}
+      </div> {/* ปิดเนื้อหาหลัก */}
+
       {feedbackMessage && (
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-up-toast">
           <div className="bg-white/30 backdrop-blur-lg text-white px-8 py-4 rounded-full border border-white/50 shadow-xl text-lg font-bold flex items-center space-x-2">
@@ -383,7 +399,6 @@ function AppContent() { // Renamed App to AppContent
         </div>
       )}
 
-      {/* Tailwind CSS keyframes for toast animation */}
       <style>{`
         @keyframes fadeInUpToast {
           0% { opacity: 0; transform: translate(-50%, 20px); }
@@ -395,17 +410,11 @@ function AppContent() { // Renamed App to AppContent
           animation: fadeInUpToast 3s ease-out forwards;
         }
       `}</style>
-      <button
-          onClick={logout}
-          className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors z-50"
-      >
-          Logout
-      </button>
+      {/* ปุ่ม Logout ถูกย้ายไปอยู่ข้างบนใน div ของ header */}
     </div>
   );
 }
 
-// Wrap AppContent with AuthProvider
 export default function App() {
   return (
     <AuthProvider>

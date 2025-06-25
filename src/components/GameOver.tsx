@@ -20,8 +20,8 @@ export default function GameOver({ gameState, onRestart, onBackToMenu }: GameOve
   const rankInfo = getRank();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-purple-900 flex items-center justify-center p-4">
-      <div className="text-center max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-purple-900 flex items-center justify-center p-4 w-full">
+      <div className="text-center mx-auto">
         {/* Game Over Title */}
         <div className="mb-8">
           <div className="text-8xl mb-4">💀</div>
